@@ -62,44 +62,73 @@ function! <SID>SpecSwitcher()
 	" too much about this function.
 	"
 	if &ft != 'ruby' && &ft != 'rspec'
-		call s:err( "Not currently in ruby or rspec mode." )
-		return
-	endif
+		" Ensure that we can always search recursively for files to open.
+		"
+		let l:orig_path = &path
+		set path=**
 
-	" Ensure that we can always search recursively for files to open.
-	"
-	let l:orig_path = &path
-	set path=**
+		" Get the current buffer name, and determine if it is a spec file.
+		"
+		" /tmp/something/whatever/elixircode.ex ---> elixircode.ex
+		"
+		" elixircode.ex ---> elixircode_test.exs
+		"
+		let l:filename     = matchstr( bufname('%'), '[0-9A-Za-z_.-]*$' )
+		let l:is_spec_file = match( l:filename, '_test.exs$' ) == -1 ? 0 : 1
 
-	" Get the current buffer name, and determine if it is a spec file.
-	"
-	" /tmp/something/whatever/rubycode.rb ---> rubycode.rb
-	" A requisite of the specfiles is that they match to the class/code file,
-	" this emulates the eigenclass stuff, but doesn't require the same
-	" directory structures.
-	"
-	" rubycode.rb ---> rubycode_spec.rb
-	" 
-	let l:filename     = matchstr( bufname('%'), '[0-9A-Za-z_.-]*$' )
-	let l:is_spec_file = match( l:filename, '_spec.rb$' ) == -1 ? 0 : 1
+		if l:is_spec_file
+			let l:other_file = substitute( l:filename, '_test\.exs$', '\.ex', '' )
+		else
+			let l:other_file = substitute( l:filename, '\.ex$', '_test\.exs', '' )
+		endif
 
-	if l:is_spec_file
-		let l:other_file = substitute( l:filename, '_spec\.rb$', '\.rb', '' )
+		let l:bufnum = bufnr( l:other_file )
+		if l:bufnum == -1
+			" The file isn't currently open, so let's search for it.
+			execute 'find ' . l:other_file
+		else
+			" We've already got an open buffer with this file, just go to it.
+			execute 'buffer' . l:bufnum
+		endif
+
+		" Restore the original path.
+		execute 'set path=' . l:orig_path
 	else
-		let l:other_file = substitute( l:filename, '\.rb$', '_spec\.rb', '' )
-	endif
+		" Ensure that we can always search recursively for files to open.
+		"
+		let l:orig_path = &path
+		set path=**
 
-	let l:bufnum = bufnr( l:other_file )
-	if l:bufnum == -1
-		" The file isn't currently open, so let's search for it.
-		execute 'find ' . l:other_file
-	else
-		" We've already got an open buffer with this file, just go to it.
-		execute 'buffer' . l:bufnum
-	endif
+		" Get the current buffer name, and determine if it is a spec file.
+		"
+		" /tmp/something/whatever/rubycode.rb ---> rubycode.rb
+		" A requisite of the specfiles is that they match to the class/code file,
+		" this emulates the eigenclass stuff, but doesn't require the same
+		" directory structures.
+		"
+		" rubycode.rb ---> rubycode_spec.rb
+		"
+		let l:filename     = matchstr( bufname('%'), '[0-9A-Za-z_.-]*$' )
+		let l:is_spec_file = match( l:filename, '_spec.rb$' ) == -1 ? 0 : 1
 
-	" Restore the original path.
-	execute 'set path=' . l:orig_path
+		if l:is_spec_file
+			let l:other_file = substitute( l:filename, '_spec\.rb$', '\.rb', '' )
+		else
+			let l:other_file = substitute( l:filename, '\.rb$', '_spec\.rb', '' )
+		endif
+
+		let l:bufnum = bufnr( l:other_file )
+		if l:bufnum == -1
+			" The file isn't currently open, so let's search for it.
+			execute 'find ' . l:other_file
+		else
+			" We've already got an open buffer with this file, just go to it.
+			execute 'buffer' . l:bufnum
+		endif
+
+		" Restore the original path.
+		execute 'set path=' . l:orig_path
+	endif
 endfunction
 
 
