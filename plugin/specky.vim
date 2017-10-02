@@ -61,7 +61,41 @@ function! <SID>SpecSwitcher()
 	" If we aren't in a ruby or rspec file then we probably don't care
 	" too much about this function.
 	"
-	if &ft != 'ruby' && &ft != 'rspec'
+	if &ft == 'javascript'
+		" Ensure that we can always search recursively for files to open.
+		"
+		let l:orig_path = &path
+		set path=**
+
+		" Get the current buffer name, and determine if it is a spec file.
+		"
+		" /tmp/something/whatever/Flash.js ---> Flash.js
+		"
+		" Flash.js ---> Flash.test.js
+		"
+		let l:filename     = matchstr( bufname('%'), '[0-9A-Za-z_.-]*$' )
+		let l:is_spec_file = match( l:filename, '.test.js$' ) == -1 ? 0 : 1
+
+		if l:is_spec_file
+			let l:other_file = substitute( l:filename, '\.test\.js$', '\.js', '' )
+		else
+			let l:other_file = substitute( l:filename, '\.js$', '\.test\.js', '' )
+		endif
+
+		let l:bufnum = bufnr( l:other_file )
+		if l:bufnum == -1
+			" The file isn't currently open, so let's search for it.
+			execute 'find ' . l:other_file
+		else
+			" We've already got an open buffer with this file, just go to it.
+			execute 'buffer' . l:bufnum
+		endif
+
+		" Restore the original path.
+		execute 'set path=' . l:orig_path
+	endif
+
+	if &ft == 'elixir'
 		" Ensure that we can always search recursively for files to open.
 		"
 		let l:orig_path = &path
@@ -93,7 +127,9 @@ function! <SID>SpecSwitcher()
 
 		" Restore the original path.
 		execute 'set path=' . l:orig_path
-	else
+	endif
+
+	if &ft == 'ruby' || &ft == 'rspec'
 		" Ensure that we can always search recursively for files to open.
 		"
 		let l:orig_path = &path
