@@ -61,7 +61,7 @@ function! <SID>SpecSwitcher()
 	" If we aren't in a ruby or rspec file then we probably don't care
 	" too much about this function.
 	"
-	if &ft == 'javascript'
+	if &ft == 'javascript' || &ft == 'javascript.jsx'
 		" Ensure that we can always search recursively for files to open.
 		"
 		let l:orig_path = &path
